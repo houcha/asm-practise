@@ -1,5 +1,4 @@
-# asm practise
+# x86
 
-Here yout can find solutions of mine to mipt asm practise course.
+This branches are dedicated to x86 assembly.
 
-See tasks in branches.
