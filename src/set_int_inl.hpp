@@ -175,15 +175,8 @@ void SetInt::Insert(int value) {
     size_++;
   }
 
-  __asm__(
-"    .intel_syntax noprefix\n\t"
-"     lea rax, [rdi+rax*8]\n"
-"     mov [rax], esi          # data_[insert_pos].value = value\n"
-"     movb [rax+4], 1         # data_[insert_pos].state = Item::State::Filled\n"
-"      .att_syntax\n"
-      :
-      : "a"(insert_pos), "D"(data_)
-      : );
+  data_[insert_pos].value = value;
+  data_[insert_pos].state = Item::State::Filled;
 
   if (size_ > capacity_ * LOAD_FACTOR_) {
     Rehash();
@@ -208,12 +201,12 @@ void SetInt::Erase(int value) {
 int* SetInt::Find(int value) const {
   size_t pos = hash_(value) % capacity_;
 
-  __asm__(
-"    .intel_syntax noprefix\n\t"
-"    xor r8, r8\n"
-"    mov r9, rcx\n"
+  __asm__ __volatile__(
+"    .intel_syntax noprefix\n"
+"    xor r8, r8	             # r8 = inc\n"
+"    mov r9, rcx             # r9 = capacity_\n"
 
-"    .LFindLoop:\n"
+".LFindLoop:\n"
 "    lea rax, [rdi+rdx*8]    # rax = &data_[pos]\n"
 "    mov cl, [rax+4]\n"
 "    test cl, cl             # data_[pos].state ? Item::State::Empty\n"
@@ -243,6 +236,7 @@ int* SetInt::Find(int value) const {
     : "D"(data_), "S"(value), "d"(pos), "c"(capacity_)
     :);
 }
+
 
 
 #endif // HASH_TABLE_INT_HPP
