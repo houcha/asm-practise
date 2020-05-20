@@ -1,4 +1,3 @@
-# x86
+# Print
 
-This branches are dedicated to x86 assembly.
-
+This branch contains `printf` implementation. Supported format flag characters: `d, x, b, f, c, s`.
