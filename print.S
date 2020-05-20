@@ -1,6 +1,3 @@
-#TODO: jump table.
-
-
 #include <asm/unistd_32.h>  // _64 doesn't work
 #include "str.S"
 
@@ -12,7 +9,10 @@
 buf_end_ptr:        .quad offset buffer
 buffer:             .fill 4096
 
-tmp_buffer:         .fill 100
+jump_table:         .fill ('z' - 'a')*8
+table_filled:       .byte 0
+
+tmp_buffer:         .fill 1000
 
 pushed_args_ptr:    .quad 0
 
@@ -29,6 +29,46 @@ precision:          .byte 11    // Number of digits to be displayed on float.
 //
 //-----------------------------------------------------------------------------
 .altmacro
+.macro fill_jump_table
+        LOCAL .loop
+        push rax
+        push rcx
+        push rdi
+
+        // Fill with default.
+        lea rax, do_nothing
+        mov rcx, 'x' - 'b'
+        lea rdi, jump_table
+        cld
+        rep stosq
+
+        lea rdi, jump_table
+
+        lea rax, inline_b
+        mov [rdi+('b'-'a')*8], rax
+        lea rax, inline_c
+        mov [rdi+('c'-'a')*8], rax
+        lea rax, inline_d
+        mov [rdi+('d'-'a')*8], rax
+        lea rax, inline_f
+        mov [rdi+('f'-'a')*8], rax
+        lea rax, inline_s
+        mov [rdi+('s'-'a')*8], rax
+        lea rax, inline_x
+        mov [rdi+('x'-'a')*8], rax
+        // via .irp ??? Next don't work :(
+        //.irp letter, b,c,d,f,s,x
+        //lea rax, inline_\letter
+        //mov [rdi+('\letter' - 'a')*8], rax
+        //.endr
+
+        movb table_filled, 1
+
+        pop rdi
+        pop rcx
+        pop rax
+.endm
+
 // Print tramplin.
 .macro push_args
             add rsp, 8*2                // Through call print.
@@ -41,7 +81,7 @@ precision:          .byte 11    // Number of digits to be displayed on float.
             mov reg_args_ptr, rsp
             movb reg_args_cnt, 5
             // Push xmm.
-            .irp xmm,xmm7,xmm6,xmm5,xmm4,xmm3,xmm2,xmm1,xmm0
+            .irp xmm, xmm7,xmm6,xmm5,xmm4,xmm3,xmm2,xmm1,xmm0
             sub rsp, 8
             movsd [rsp], xmm
             .endr
@@ -116,7 +156,6 @@ precision:          .byte 11    // Number of digits to be displayed on float.
         inc rdi
         dec rax
         loop .loop
-        ret
 .endm
 //-----------------------------------------------------------------------------
 //
@@ -137,47 +176,33 @@ precision:          .byte 11    // Number of digits to be displayed on float.
 print:          push rbp
                 mov rbp, rsp
 
-                push_args
+                cmpb table_filled, 0
+                jne .skip_filling
+                fill_jump_table
 
-                mov rsi, rdi            // rsi = current format
-                mov rdi, [buf_end_ptr]  // rdi = buffer end
-                                        // rax = tmp
+.skip_filling:  push_args
 
-.print_loop:                            //  for (;;) {
-                call bufferize          //      cur = bufferize(cur);
-                cmp rax, 0              //      if (cur == NULL)
+                mov rsi, rdi
+                mov rdi, [buf_end_ptr]
+                // rsi = current format
+                // rdi = buffer end
+                // rax = tmp
+.print_loop:    call bufferize          // read to buffer
+                cmp rax, 0              // if (cur == NULL)
                 je .print_break         //          break;
                 inc rsi                 //      cur++;  // skip %
+                xor rax, rax
                 mov al, [rsi]           //      char pattern = *cur;
-.print_d:       cmp al, 'd'             //      if (pattern == 'd')
-                jne .print_x            //          inline_d()
-                call inline_d           //
-                jmp .print_if_end       //
-.print_x:       cmp al, 'x'             //      if (pattern == 'x')
-                jne .print_b            //          inline_x()
-                call inline_x           //
-                jmp .print_if_end       //
-.print_b:       cmp al, 'b'             //      else if (pattern == 'b')
-                jne .print_f            //          inline_b()
-                call inline_b           //
-                jmp .print_if_end       //
-.print_f:       cmp al, 'f'             //      else if (pattern == 'f')
-                jne .print_c            //          inline_f()
-                call inline_f           //
-                jmp .print_if_end       //
-.print_c:       cmp al, 'c'             //      else if (pattern == 'c')
-                jne .print_s            //          inline_c()
-                call inline_c           //
-                jmp .print_if_end       //
-.print_s:       cmp al, 's'             //      else if (pattern == 's')
-                jne .print_else         //          inline_s()
-                call inline_s           //
-                jmp .print_if_end       //      else {
-.print_else:    call error              //          error();
-                jmp .print_break        //          break;
-                                        //      }
-.print_if_end:  inc rsi                 //      cur++;
-                jmp .print_loop         //  } // for loop
+                sub rax, 'a'
+                shl rax, 3              // *= 8
+                lea rcx, jump_table
+                add rcx, rax
+                mov rcx, [rcx]
+
+                call rcx
+
+                inc rsi
+                jmp .print_loop
 
 .print_break:   mov rsp, rbp
                 pop rbp
@@ -228,27 +253,39 @@ flush:  push rbx
 // INLINES.
 //
 //-----------------------------------------------------------------------------
+inline_b:       load_arg_ptr reg
+                mov rax, [rax]
+
+                lea rcx, tmp_buffer
+.loop_inl_b:    mov dl, al
+                and dl, 1
+                add dl, '0'
+                mov [rcx], dl
+                shr rax, 1
+                inc rcx
+                cmp rax, 0
+                jne .loop_inl_b
+
+                dec rcx
+                mov rax, rcx    // Ptr to first digit.
+
+                tmp_to_buf
+                ret
+//-----------------------------------------------------------------------------
+//
+//
+//-----------------------------------------------------------------------------
+inline_c:       load_arg_ptr reg
+                mov rax, [rax]      // rax = char.
+                stosb
+                ret
+//-----------------------------------------------------------------------------
+//
+//
+//-----------------------------------------------------------------------------
 inline_d:       load_arg_ptr reg
                 mov rax, [rax]
                 x_to_str eax 10
-                tmp_to_buf
-                ret
-//-----------------------------------------------------------------------------
-//
-//
-//-----------------------------------------------------------------------------
-inline_x:       load_arg_ptr reg
-                mov rax, [rax]
-                x_to_str eax 16
-                tmp_to_buf
-                ret
-//-----------------------------------------------------------------------------
-//
-//
-//-----------------------------------------------------------------------------
-inline_b:       load_arg_ptr reg
-                mov rax, [rax]
-                x_to_str eax 2
                 tmp_to_buf
                 ret
 //-----------------------------------------------------------------------------
@@ -283,14 +320,6 @@ inline_f:       load_arg_ptr xmm
 //
 //
 //-----------------------------------------------------------------------------
-inline_c:       load_arg_ptr reg
-                mov rax, [rax]      // rax = char.
-                stosb
-                ret
-//-----------------------------------------------------------------------------
-//
-//
-//-----------------------------------------------------------------------------
 inline_s:       load_arg_ptr reg
                 mov rax, [rax]      // rax = ptr to string.
                 mov rcx, rsi        // Save rsi.
@@ -302,6 +331,14 @@ inline_s:       load_arg_ptr reg
 //
 //
 //-----------------------------------------------------------------------------
-error:          // TODO: raise error
+inline_x:       load_arg_ptr reg
+                mov rax, [rax]
+                x_to_str eax 16
+                tmp_to_buf
                 ret
+//-----------------------------------------------------------------------------
+//
+//
+//-----------------------------------------------------------------------------
+do_nothing:     ret
 
