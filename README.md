@@ -1,5 +1,7 @@
-# asm practise
+# Frame
 
-Here yout can find solutions of mine to mipt asm practise course.
+A simple frame with shadow written in Turbo Assembler in DOS OS.
 
-See tasks in branches.
+Frame outlook:
+
+<img src="frame.png">
