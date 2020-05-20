@@ -71,7 +71,7 @@ org 100h
 Start:      xor ax, ax
             mov es, ax
 
-            cli
+            cli                         ; Block other interrupts.
             ; Save old 9th handler.
             mov bx, 9*4
             ; es:[bx] = FFFF(offset):FFFF(segment)
@@ -94,7 +94,7 @@ Start:      xor ax, ax
             mov es:[bx], offset New08   ; Set handler offset.
             mov ax, cs                  ; cs = current segment.
             mov es:[bx+2], ax           ; es:[bx] = full address of new handler.
-            sti
+            sti                         ; Allow other interrupts.
 
             ; http://www.codenet.ru/progr/dos/dos_0052.php
             mov ah, 31h
@@ -194,19 +194,20 @@ DrawFrame ENDP
 
 ; Keyboard interruption.
 New09       PROC
-            push ax
+            push ax         ; Save given argument.
 
             in al, 60h      ; Read button number from keyboard port.
 
-            ; Check if button is 's'
-            cmp al, 31
-            jne .NotUpdate
-            not show_frame
 
-.NotUpdate: pop ax          ; Recover registers.
+            cmp al, 31      ; Check if button is 's'.
+            jne .NotUpdate
+            not show_frame  ; If s is pressed, change frame state.
+                            ; (show->hide and vise versa)
+
+.NotUpdate: pop ax          ; Recover given argument.
 
             ; Far "dynamic" jmp to base handler.
-            db 0eah
+            db 0eah         ; 0eah is "jmp" code.
 Old_09_Ofs  dw 0
 Old_09_Seg  dw 0
             ; Pop ip, and flags, for they might be cleared by interruption.
@@ -243,8 +244,8 @@ New08       PROC
 
             ; Far jmp to base handler.
             db 0eah
-Old08Ofs    dw 0
-Old08Seg    dw 0
+Old_08_Ofs  dw 0
+Old_08_Seg  dw 0
             iret
 New08 ENDP
 
