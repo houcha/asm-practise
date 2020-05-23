@@ -6,9 +6,9 @@ include string.asm
 .data
 newline     db 13, 10, '$'
 clause      db 'Enter password: $'
-fail_msg    db 'Incorrect password.' , 13, 10, '$'
-success_msg db 'Welcome!', 13, 10, '$'
-alarm       db 'You shall not pass!', 13, 10, '$'
+fail_msg    db 'Incorrect password.$'
+success_msg db 'Welcome!$'
+alarm       db 'You shall not pass!$'
 
 passw_len   db 10
 input       db 30 dup(?)
@@ -64,8 +64,7 @@ ENDM
 
 .code
 org 100h
-Start:      lea bx, [input]
-            mov byte ptr [input], 255
+Start:      mov byte ptr [input], 255
 
 .ReadLoop:  PRINT clause
 
@@ -90,10 +89,12 @@ Start:      lea bx, [input]
             cmp al, 2
             jne .Alarm
             PRINT success_msg
+            PRINT newline
             jmp .ExitProg
 .Alarm:     PRINT alarm
             jmp .Alarm
 .Fail:      PRINT fail_msg
+            PRINT newline
             jmp .ReadLoop
 
 .ExitProg:  mov ax, 4c00h
