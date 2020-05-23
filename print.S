@@ -90,7 +90,7 @@ precision:          .byte 11    // Number of digits to be displayed on float.
 .endm
 
 // Convert x to 'base' base char (e.g. 0 -> '0', 10 -> 'A').
-.macro x_to_base x base
+.macro num_to_base x base
             LOCAL .letter, .end
             cmp x, 9
             jg .letter
@@ -102,7 +102,7 @@ precision:          .byte 11    // Number of digits to be displayed on float.
 
 // x = *ax register contains number to be converted to string.
 // return pointer to tmp_buffer end.
-.macro x_to_str x base
+.macro num_to_str_div x base
         LOCAL .loop
 
         push rbx
@@ -115,8 +115,8 @@ precision:          .byte 11    // Number of digits to be displayed on float.
         inc rdi
         neg x
 .loop:  xor rdx, rdx
-        div rcx         // rax = 0:rax / 10; rdx = 0:rax % 10
-        x_to_base dl base
+        div rcx         // rax = 0:rax / 10// rdx = 0:rax % 10
+        num_to_base dl base
         mov [rbx], dl
         inc rbx
         cmp rax, 0
@@ -126,6 +126,23 @@ precision:          .byte 11    // Number of digits to be displayed on float.
         mov rax, rbx    // Ptr to first digit.
 
         pop rbx
+.endm
+
+.macro num_to_str_shr x base shift
+        LOCAL .loop
+
+        lea rcx, tmp_buffer
+.loop:  mov dl, al
+        and dl, base-1
+        num_to_base dl base
+        mov [rcx], dl
+        shr rax, shift
+        inc rcx
+        cmp rax, 0
+        jne .loop
+
+        dec rcx
+        mov rax, rcx    // Ptr to first digit.
 .endm
 
 // Load (regname)_args_ptr to rax.
@@ -189,10 +206,10 @@ print:          push rbp
                 // rax = tmp
 .print_loop:    call bufferize          // read to buffer
                 cmp rax, 0              // if (cur == NULL)
-                je .print_break         //          break;
-                inc rsi                 //      cur++;  // skip %
+                je .print_break         //          break//
+                inc rsi                 //      cur++//  // skip %
                 xor rax, rax
-                mov al, [rsi]           //      char pattern = *cur;
+                mov al, [rsi]           //      char pattern = *cur//
                 sub rax, 'a'
                 shl rax, 3              // *= 8
                 lea rcx, jump_table
@@ -220,7 +237,7 @@ bufferize:          cld
                     cmp al, '%'
                     je .bufferize_pattern   // %(pattern) is met.
 
-                    movsb                   // buffer[i] = format[i]; ++i
+                    movsb                   // buffer[i] = format[i]// ++i
 
                     cmp al, 0
                     je .bufferize_null      // \0 is met.
@@ -255,20 +272,7 @@ flush:  push rbx
 //-----------------------------------------------------------------------------
 inline_b:       load_arg_ptr reg
                 mov rax, [rax]
-
-                lea rcx, tmp_buffer
-.loop_inl_b:    mov dl, al
-                and dl, 1
-                add dl, '0'
-                mov [rcx], dl
-                shr rax, 1
-                inc rcx
-                cmp rax, 0
-                jne .loop_inl_b
-
-                dec rcx
-                mov rax, rcx    // Ptr to first digit.
-
+                num_to_str_shr rax 2 1
                 tmp_to_buf
                 ret
 //-----------------------------------------------------------------------------
@@ -285,7 +289,7 @@ inline_c:       load_arg_ptr reg
 //-----------------------------------------------------------------------------
 inline_d:       load_arg_ptr reg
                 mov rax, [rax]
-                x_to_str eax 10
+                num_to_str_div eax 10
                 tmp_to_buf
                 ret
 //-----------------------------------------------------------------------------
@@ -313,7 +317,7 @@ inline_f:       load_arg_ptr xmm
 
                 cvtsd2si rax, xmm0
 
-                x_to_str rax 10
+                num_to_str_div rax 10
                 tmp_to_buf try_insert_dot
                 ret
 //-----------------------------------------------------------------------------
@@ -333,7 +337,7 @@ inline_s:       load_arg_ptr reg
 //-----------------------------------------------------------------------------
 inline_x:       load_arg_ptr reg
                 mov rax, [rax]
-                x_to_str eax 16
+                num_to_str_shr rax 16 4
                 tmp_to_buf
                 ret
 //-----------------------------------------------------------------------------
