@@ -1,7 +1,7 @@
 # Password hacking
 This task is considered to implement DOS password checker in Turbo Assembler. However, I should have left some weak places in such a way that it would be possible to hack it and pass a check successfully.
 
-<img src="first.png">
+<img src="pictures/first.png">
 
 > There is a silenced moment that I don't want to stop at: hash. It's really primitive and has (I suppose) many collisions, so unusable in real application. However, it seems suitable for this task. (At least I didn't manage to find out a password by hash without brute force with exponential growth). See C analogue in `hash.c` file.
 
@@ -54,12 +54,13 @@ However, 50 identical symbols would not break a password, for `input != hash(inp
 The only thing we have to do is to count `hash(input)`, which is not a rocket science if you have `.COM` file and Turbo Debugger. Let's take ten ones: `1111111111` as a password. Then decimal representation of a hash is `29 217 190 17 195 35 36 148 116 217`. Next, since 20 bytes between password and hash are not important, fill them with any characters.
 
 Let's give it a try:
-<img src="hack_without_hash.png">
+
+<img src="pictures/hack_without_hash.png">
 
 Eh... What about `29 217 190 17 195 35 36 148 116 217`? There is a hack: almost any symbol in range of `[1..255]` [can be entered](https://kb.iu.edu/d/afcy) via `Alt + sym_decimal_code` (though there are few exceptions).
  
 Here what we get:
-<img src="hack_no_can.png">
+<img src="pictures/hack_without_canaries.png">
 
 Output:
 <img src="you_shall_not_pass.png">
@@ -78,6 +79,6 @@ Now have a look at this part of a loop:
 ```
 Seems like we've forgotten about canaries, aren't we? Let's fix it by surrounding hash part with `Alt+1`:
 
-<img src="success.png">
+<img src="pictures/success.png">
 
 **Welcome!**
