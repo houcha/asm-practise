@@ -1,7 +1,13 @@
 # Password hacking
-This task is considered to implement DOS password checker in Turbo Assembler. However, I should have left some weak places in such a way that it would be possible to hack it and pass a check successfully.
+This task is considered to implement DOS password checker in Turbo Assembler. However, I have left some weak places in such a way that it would be possible to hack it and pass a check successfully.
 
 <img src="pictures/first.png">
+
+`PASSWORD.COM` is executable, intending can try their hands.
+
+**Good luck!**
+
+## Solution
 
 > There is a silenced moment that I don't want to stop at: hash. It's really primitive and has (I suppose) many collisions, so unusable in real application. However, it seems suitable for this task. (At least I didn't manage to find out a password by hash without brute force with exponential growth). See C analogue in `hash.c` file.
 
@@ -83,4 +89,4 @@ Seems like we've forgotten about canaries, aren't we? Let's fix it by surroundin
 
 <img src="pictures/success.png">
 
-**Welcome!**
+**We've hacked it!**
