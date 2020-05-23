@@ -21,7 +21,7 @@ Start:      mov byte ptr [input], 255 ; Set max input length = 255.
             lea dx, [input]           ; Note that input[1] = input length.
             int 21h
 
-            HASH input+2				      ; Count input hash.
+            HASH input+2              ; Count input hash.
 
             lea di, [input+2]         ; Input starts from 2nd position.
             lea si, [password]
@@ -53,9 +53,9 @@ canary1     db 1
 password    db 115,60,236,253,132,181,220,21,152,62
 canary2     db 1
 ```
-Here we see that input is supposed to be under 30 symbols. From the other side, maximum input length is 255. So what happens if we enter 60 chars? We fill `input`, then we fill `canary1`, then `password`... Stop, what?! We've changed password with input?!
+Here we see that input is supposed to be under 30 symbols. From the other side, maximum input length is 255. So what happens if we enter 60 chars? We fill `input`, then we fill `canary1`, then `password`... Stop, what?! We've just changed password with input?!
 
-However, 50 identical symbols would not break a password, for `input != hash(input)`. So what why not to fill `input` with random bytes and `passoword` with its hash?..
+However, 50 identical symbols would not break a password, for `input != hash(input)`. So what why not to fill `input` with random bytes and `passoword` with its hash?
 
 The only thing we have to do is to count `hash(input)`, which is not a rocket science if you have `.COM` file and Turbo Debugger. Let's take ten ones: `1111111111` as a password. Then decimal representation of a hash is `29 217 190 17 195 35 36 148 116 217`. Next, since 20 bytes between password and hash are not important, fill them with any characters.
 
@@ -63,7 +63,7 @@ Let's give it a try:
 
 <img src="pictures/hack_without_hash.png">
 
-Eh... What about `29 217 190 17 195 35 36 148 116 217`? There is a hack: almost any symbol in range of `[1..255]` [can be entered](https://kb.iu.edu/d/afcy) via `Alt + sym_decimal_code` (though there are few exceptions).
+Eh... What about `29 217 190 17 195 35 36 148 116 217`? There is a hack: almost every symbol in range of `[1..255]` [can be entered](https://kb.iu.edu/d/afcy) via `Alt + char_decimal_code` (though there are few exceptions).
  
 Here what we get:
 
@@ -88,5 +88,3 @@ Now have a look at this part of a loop:
 Seems like we've forgotten about canaries, aren't we? Let's fix it by surrounding hash part with `Alt+1`:
 
 <img src="pictures/success.png">
-
-**We've hacked it!**
