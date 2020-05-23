@@ -1,6 +1,6 @@
 # Frame with registers
 
-This is an interruption-based frame written in Turbo Assembler in DOS OS.
+This is an interruption-based frame written in Turbo Assembler in MS-DOS.
 ## How it works
 As the program starts, a default 8-th (timer) and 9-th (keyboard) interrupt handlers are replaced with `New08` and `New09` handlers respectively:
 
@@ -93,4 +93,3 @@ Old08Seg    dw 0
             iret
 New08 ENDP
 ```
-## Look
