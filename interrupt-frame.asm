@@ -87,9 +87,9 @@ Start:      xor ax, ax
             ; Save old 8th handler.
             mov bx, 8*4
             mov ax, es:[bx]
-            mov Old08Ofs, ax
+            mov Old_08_Ofs, ax
             mov ax, es:[bx+2]
-            mov Old08Seg, ax
+            mov Old_08_Seg, ax
 
             mov es:[bx], offset New08   ; Set handler offset.
             mov ax, cs                  ; cs = current segment.
@@ -201,7 +201,7 @@ New09       PROC
 
             cmp al, 31      ; Check if button is 's'.
             jne .NotUpdate
-            not show_frame  ; If s is pressed, change frame state.
+            not cs:show_frame ; If s is pressed, change frame state.
                             ; (show->hide and vise versa)
 
 .NotUpdate: pop ax          ; Recover given argument.
@@ -218,7 +218,7 @@ New09 ENDP
 New08       PROC
             push ax bx cx dx di si es
 
-            cmp show_frame, 0
+            cmp cs:show_frame, 0
             ; See https://stackoverflow.com/questions/39427980/relative-jump-out-of-range-by
             jne .Show
             jmp .Skip
