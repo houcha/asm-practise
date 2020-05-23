@@ -60,10 +60,12 @@ Let's give it a try:
 Eh... What about `29 217 190 17 195 35 36 148 116 217`? There is a hack: almost any symbol in range of `[1..255]` [can be entered](https://kb.iu.edu/d/afcy) via `Alt + sym_decimal_code` (though there are few exceptions).
  
 Here what we get:
+
 <img src="pictures/hack_without_canaries.png">
 
-Output:
-<img src="you_shall_not_pass.png">
+Enter:
+
+<img src="pictures/you_shall_not_pass.png">
 
 Now have a look at this part of a loop:
 ```asm
